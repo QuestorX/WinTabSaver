@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+
+    <AssemblyName>WinTabSaver</AssemblyName>
+    <RootNamespace>WinTabSaver</RootNamespace>
+    <AssemblyTitle>WinTabSaver – Explorer Session Manager</AssemblyTitle>
+    <AssemblyDescription>System Tray application that saves and restores Windows Explorer sessions.</AssemblyDescription>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Company>WinTabSaver</Company>
+    <Copyright>© 2025</Copyright>
+
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <StartupObject>WinTabSaver.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- All C# source files live in the src/ subdirectory -->
+    <Compile Include="src\**\*.cs" />
+  </ItemGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<DefineConstants>DEBUG;TRACE;WINTABSAVER_VERBOSE</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<Optimize>true</Optimize>
+		<DebugType>none</DebugType>
+	</PropertyGroup>
+
+</Project>
