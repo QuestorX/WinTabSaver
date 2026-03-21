@@ -176,10 +176,10 @@ The file is human-readable JSON. Example:
 
 ```
 WinTabSaver/
-├── WinTabSaver.csproj         .NET 8 WinForms project file
 ├── Build-And-Install.ps1      PowerShell build & Startup-shortcut helper
 ├── README.md
 └── src/
+    ├── WinTabSaver.csproj         .NET 8 WinForms project file
     ├── Program.cs                 Entry point, single-instance mutex
     ├── TrayApplicationContext.cs  Tray icon, context menu, auto-save timer,
     │                              settings toggle, Windows shutdown interception

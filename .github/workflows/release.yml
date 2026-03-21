@@ -62,7 +62,7 @@ jobs:
       - name: Publish single-file EXE
         shell: pwsh
         run: |
-          dotnet publish WinTabSaver.csproj `
+          dotnet publish src/WinTabSaver.csproj `
             --configuration Release `
             --runtime win-x64 `
             --self-contained false `
