@@ -32,6 +32,10 @@ jobs:
   build-and-release:
     runs-on: windows-latest
 
+    # Explicit write permissions required to create releases and upload assets
+    permissions:
+      contents: write
+
     steps:
       # -- 1. Checkout ------------------------------------------------------
       - name: Checkout repository
