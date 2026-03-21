@@ -1,0 +1,94 @@
+# ---------------------------------------------------------------------------
+# GitHub Actions workflow: Build and publish a WinTabSaver release
+#
+# Triggers:
+#   - Manually via "Run workflow" button in the Actions tab
+#   - Automatically when a version tag (e.g. v1.0.0) is pushed
+#
+# What it does:
+#   1. Checks out the repository
+#   2. Sets up .NET 8
+#   3. Runs "dotnet publish" to produce a single-file EXE
+#   4. Creates a GitHub Release and uploads the EXE as a release asset
+# ---------------------------------------------------------------------------
+
+name: Build and Release
+
+on:
+  # Manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+  # Automatic trigger when a tag like v1.0.0 is pushed
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      # -- 1. Checkout ------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -- 2. Setup .NET 8 --------------------------------------------------
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # -- 3. Determine version string --------------------------------------
+      # If triggered by a tag (v1.2.3), strip the leading "v".
+      # If triggered manually, use the input value.
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $v = "${{ github.ref_name }}" -replace '^v', ''
+          } else {
+            $v = "${{ github.event.inputs.version }}"
+          }
+          echo "VERSION=$v" >> $env:GITHUB_OUTPUT
+          echo "Resolved version: $v"
+
+      # -- 4. Build / Publish -----------------------------------------------
+      - name: Publish single-file EXE
+        shell: pwsh
+        run: |
+          dotnet publish WinTabSaver.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained false `
+            --output publish `
+            /p:PublishSingleFile=true `
+            /p:Version=${{ steps.version.outputs.VERSION }}
+
+      # -- 5. Rename artifact with version number ---------------------------
+      - name: Rename artifact
+        shell: pwsh
+        run: |
+          $src = "publish\WinTabSaver.exe"
+          $dst = "publish\WinTabSaver-v${{ steps.version.outputs.VERSION }}.exe"
+          Move-Item $src $dst
+          echo "Artifact: $dst"
+
+      # -- 6. Create GitHub Release and upload EXE --------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.VERSION }}"
+          name: "WinTabSaver v${{ steps.version.outputs.VERSION }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            publish/WinTabSaver-v${{ steps.version.outputs.VERSION }}.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
