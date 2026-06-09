@@ -183,27 +183,44 @@ namespace WinTabSaver
         }
 
         /// <summary>
-        /// Restores a saved session by opening Explorer paths that are not yet
-        /// visible. Whether already-open paths are skipped is controlled by
+        /// Restores a saved session window by window, preserving tab grouping.
+        ///
+        /// For each saved window:
+        ///   - The first tab is opened as a new Explorer window.
+        ///   - Additional tabs are injected via keyboard automation (Ctrl+T + Alt+D)
+        ///     so they appear as real tabs in the same window (Windows 11 22H2+).
+        ///   - On Windows 10 (no tab support) each path opens as a separate window.
+        ///
+        /// Whether already-open paths are skipped is controlled by
         /// <see cref="AppSettings.AllowDuplicatePaths"/>.
         /// </summary>
         /// <param name="session">The session to restore.</param>
-        /// <returns>Number of new Explorer paths opened.</returns>
+        /// <returns>Total number of new Explorer paths opened.</returns>
         public static int RestoreSession(ExplorerSession session)
         {
             int opened = 0;
 
             try
             {
-                // Collect currently open paths (used when duplicate prevention is active)
+                // Collect currently open paths for duplicate filtering
                 var alreadyOpen = ExplorerInterop.GetCurrentlyOpenPaths();
 
                 foreach (var window in session.Windows)
                 {
+                    // Build a filtered copy of this window's tabs, honouring the
+                    // duplicate-paths setting and removing missing paths.
+                    var windowToRestore = new ExplorerWindowInfo
+                    {
+                        Left        = window.Left,
+                        Top         = window.Top,
+                        Width       = window.Width,
+                        Height      = window.Height,
+                        IsMaximized = window.IsMaximized
+                    };
+
                     foreach (string tabPath in window.Tabs)
                     {
-                        // Validate the path still exists on disk
-                        if (!System.IO.Directory.Exists(tabPath) && !System.IO.File.Exists(tabPath))
+                        if (!System.IO.Directory.Exists(tabPath))
                         {
                             Debug.WriteLine($"[SessionManager] Skipping missing path: {tabPath}");
                             continue;
@@ -218,17 +235,14 @@ namespace WinTabSaver
                             continue;
                         }
 
-                        ExplorerInterop.OpenExplorerWindow(tabPath);
-
-                        // Track in the local set to prevent intra-restore duplication
-                        // (this applies regardless of the setting so we do not open
-                        //  the very same path twice in a single restore pass)
-                        alreadyOpen.Add(tabPath);
-                        opened++;
-
-                        // Brief pause so Explorer registers the new window
-                        System.Threading.Thread.Sleep(300);
+                        windowToRestore.Tabs.Add(tabPath);
                     }
+
+                    if (windowToRestore.Tabs.Count == 0) continue;
+
+                    // Restore this window, injecting tabs where supported
+                    int count = ExplorerInterop.RestoreWindow(windowToRestore, alreadyOpen);
+                    opened += count;
                 }
             }
             catch (Exception ex)
