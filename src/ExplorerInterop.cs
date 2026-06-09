@@ -262,7 +262,10 @@ namespace WinTabSaver
                 if (!string.IsNullOrWhiteSpace(url) &&
                     Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) && uri.IsFile)
                 {
-                    string local = Uri.UnescapeDataString(uri.LocalPath);
+                    // uri.LocalPath is already percent-decoded by the Uri class.
+                    // Calling Uri.UnescapeDataString on top would double-decode and
+                    // corrupt paths containing a literal % (e.g. "C:\\100% Done").
+                    string local = uri.LocalPath;
                     if (!string.IsNullOrWhiteSpace(local))
                         return NormalisePath(local);
                 }
@@ -358,9 +361,14 @@ namespace WinTabSaver
             }
         }
 
-        /// <summary>Trims trailing backslashes and whitespace from a path.</summary>
+        /// <summary>
+        /// Trims trailing separators and whitespace, then applies Unicode NFC
+        /// normalisation so composed and decomposed forms of the same character
+        /// (e.g. u-umlaut as U+00FC vs u + combining diaeresis U+0308) compare
+        /// equal when matched against strings returned by the Shell COM layer.
+        /// </summary>
         private static string NormalisePath(string path) =>
-            path.TrimEnd('\\', '/').Trim();
+            path.TrimEnd('\\', '/').Trim().Normalize(System.Text.NormalizationForm.FormC);
 
         // -- Window geometry ----------------------------------------------------
 

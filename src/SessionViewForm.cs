@@ -18,7 +18,7 @@ namespace WinTabSaver
         public SessionViewForm()
         {
             // -- Form properties ------------------------------------------------
-            Text            = "ExplorerTools – Open Explorer Windows";
+            Text            = "WinTabSaver – Open Explorer Windows";
             Size            = new Size(560, 460);
             MinimumSize     = new Size(420, 320);
             StartPosition   = FormStartPosition.CenterScreen;

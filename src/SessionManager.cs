@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Unicode;
 using System.Diagnostics;
 
 namespace WinTabSaver
@@ -41,7 +43,13 @@ namespace WinTabSaver
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented          = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+
+            // Write non-ASCII characters (Umlauts, accents, CJK, etc.) as their
+            // literal UTF-8 representation instead of \uXXXX escape sequences.
+            // This prevents comparison mismatches when paths are read back from
+            // JSON and compared against strings returned by the Shell COM layer.
+            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
         };
 
         // -- Public API ---------------------------------------------------------
