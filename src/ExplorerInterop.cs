@@ -275,10 +275,17 @@ namespace WinTabSaver
                 if (!string.IsNullOrWhiteSpace(url) &&
                     Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) && uri.IsFile)
                 {
-                    // uri.LocalPath is already percent-decoded by the Uri class.
-                    // Calling Uri.UnescapeDataString on top would double-decode and
-                    // corrupt paths containing a literal % (e.g. "C:\100% Done").
-                    string local = uri.LocalPath;
+                    // Uri.LocalPath may leave non-ASCII sequences encoded on some
+                    // .NET/Windows combinations (e.g. "Ö" stays as "%D6").
+                    // Solution: decode via Uri.UnescapeDataString(uri.AbsolutePath),
+                    // strip the leading slash, and restore Windows backslashes.
+                    // We do NOT use uri.LocalPath to avoid the inconsistent
+                    // decoding behaviour across runtime versions.
+                    // Note: this correctly handles & (%26) and other ASCII
+                    // specials because NFC normalisation runs afterwards and
+                    // the JSON encoder is set to UnsafeRelaxedJsonEscaping.
+                    string raw   = Uri.UnescapeDataString(uri.AbsolutePath);
+                    string local = raw.TrimStart('/').Replace('/', '\\');
                     if (!string.IsNullOrWhiteSpace(local))
                         return NormalisePath(local);
                 }

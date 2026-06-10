@@ -3,7 +3,6 @@ using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Unicode;
 using System.Diagnostics;
 
 namespace WinTabSaver
@@ -45,11 +44,12 @@ namespace WinTabSaver
             WriteIndented          = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
 
-            // Write non-ASCII characters (Umlauts, accents, CJK, etc.) as their
-            // literal UTF-8 representation instead of \uXXXX escape sequences.
-            // This prevents comparison mismatches when paths are read back from
-            // JSON and compared against strings returned by the Shell COM layer.
-            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            // Only escape characters strictly required by the JSON spec (" and \).
+            // JavaScriptEncoder.Create(UnicodeRanges.All) still escapes HTML-unsafe
+            // characters such as & -> \u0026, which corrupts paths like "One & Two".
+            // UnsafeRelaxedJsonEscaping writes all characters as-is except " and \,
+            // so Umlauts, &, and other non-ASCII chars are stored correctly.
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
         // -- Public API ---------------------------------------------------------
